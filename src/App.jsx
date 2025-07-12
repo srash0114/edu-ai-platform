@@ -391,7 +391,7 @@ const ChatbotModal = ({ products, onClose, onSuggestProductClick }) => {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 50, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                    className="bg-white rounded-xl shadow-2xl w-full max-w-1/4 max-h-[90vh] flex flex-col"
+                    className="bg-white rounded-xl shadow-2xl w-full md:max-w-1/4 max-w-100 max-h-[90vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex justify-between items-center p-4 border-b bg-blue-600 text-white rounded-t-xl">
