@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Heart, Search, Bot, Clock, Loader, AlertCircle, Trash2, LogOut, User, ChevronDown, MessageSquare, ShoppingCart } from 'lucide-react'; // Add MessageSquare icon
+import { Heart, Search, Bot, Clock, Loader, AlertCircle, Trash2, LogOut, User, ChevronDown, MessageSquare } from 'lucide-react'; // Add MessageSquare icon
 import { AnimatePresence, motion } from 'framer-motion';
 import mockProducts from  './data/mockData.js';
 import ProductCard from './components/ProductCard.jsx';
@@ -158,7 +158,7 @@ export default function App() {
         // Thông báo khi xem chi tiết khóa học
         const alertDetails = {
             type: 'info',
-            message: `Đã xem chi tiết khóa học: ${product.name}`,
+            message: `Đang xem chi tiết khóa học: ${product.name}`,
             duration: 3000,
         };
 
@@ -172,14 +172,18 @@ export default function App() {
 
     // NEW: Hàm thêm sản phẩm vào giỏ hàng
     const handleAddToCart = (productToAdd) => {
-        // Kiểm tra nếu sản phẩm chưa có trong giỏ hàng
-        if (!cart.find(item => item.id === productToAdd.id)) {
-            setCart(prevCart => [...prevCart, productToAdd]);
-            // (Tùy chọn) Hiển thị thông báo thành công
-            // alert(`${productToAdd.name} đã được thêm vào giỏ hàng!`);
+        try {
+            if (!cart.find(item => item.id === productToAdd.id)) {
+                setCart(prevCart => [...prevCart, productToAdd]);
+                addAlert('info', `Đã thêm khóa học ${productToAdd.name} vào giỏ hàng`, 3000);
+            } else {
+                addAlert('warning', `Khóa học ${productToAdd.name} đã có trong giỏ hàng`, 3000);
+            }
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            addAlert('error', 'Đã xảy ra lỗi khi thêm khóa học vào giỏ hàng', 3000);
         }
     };
-
     const handleCloseModal = () => setSelectedProduct(null);
 
     const handleWishlistToggle = (productId) => {
@@ -529,7 +533,12 @@ const handleClearHistory = (productId = null) => {
             {showCartModal && (
             <CartModal cart={cart} onClose={handleCloseCart} setCart={setCart} addAlert={addAlert} />
             )}
-            {selectedProduct && <ProductModal product={selectedProduct} onClose={handleCloseModal} />}
+            {selectedProduct && <ProductModal 
+                product={selectedProduct} 
+                onClose={handleCloseModal} 
+                isInCart={!!cart.find(item => item.id === selectedProduct.id)} 
+                handleAddToCart={handleAddToCart}
+            />}
             {showProfileModal && currentUser && <ProfileModal user={currentUser} onClose={handleCloseProfileModal} />}
             {showChatbotModal && (
                 <ChatbotModal

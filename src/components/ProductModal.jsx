@@ -1,7 +1,7 @@
-import { X, Star } from 'lucide-react';
+import { X, Star, ShoppingCart } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-const ProductModal = ({ product, onClose }) => {
+const ProductModal = ({ product, onClose, isInCart, handleAddToCart }) => {
     if (!product) return null;
 
     return (
@@ -36,8 +36,14 @@ const ProductModal = ({ product, onClose }) => {
                                 <p className="text-3xl font-extrabold text-blue-600 my-4">
                                     {product.price.toLocaleString('vi-VN')}₫
                                 </p>
-                                <button className="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600 transition-colors duration-300">
-                                    Thêm vào giỏ hàng
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); handleAddToCart(product);
+                                    }}
+                                    disabled={isInCart}
+                                    className={`w-full mt-3 py-2 rounded-md text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${isInCart ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                                >
+                                    <ShoppingCart size={16} />
+                                    {isInCart ? 'Đã trong giỏ hàng' : 'Thêm vào giỏ'}
                                 </button>
                             </div>
                         </div>

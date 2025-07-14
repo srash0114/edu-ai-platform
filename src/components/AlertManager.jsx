@@ -2,7 +2,7 @@ import AlertButton from './AlertButton.jsx';
 
 const AlertManager = ({ alerts, removeAlert }) => {
     return (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-md">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-60 flex flex-col gap-2 w-full max-w-md">
                 {alerts.map((alert, index) => (
                     <AlertButton
                         key={alert.id}

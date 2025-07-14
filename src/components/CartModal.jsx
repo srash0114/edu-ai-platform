@@ -9,7 +9,7 @@ const CartModal = ({ cart, onClose, setCart, addAlert }) => {
   // Calculate subtotal
   const subtotal = cart
     .filter((item) => selectedItems.includes(item.id))
-    .reduce((sum, item) => sum + item.price * item.quantity, 0);
+    .reduce((sum, item) => sum + item.price, 0);
 
   // Toggle item selection
   const toggleItemSelection = (itemId) => {
@@ -29,13 +29,50 @@ const CartModal = ({ cart, onClose, setCart, addAlert }) => {
 
   // Remove item from cart
   const handleRemoveFromCart = (itemId) => {
+    let alertDetails = null; 
     setCart((prev) => {
       const updatedCart = prev.filter((item) => item.id !== itemId);
-      addAlert('warning', 'Đã xóa khóa học khỏi giỏ hàng', 3000);
+      alertDetails = {
+            type: 'warning',
+            message: 'Đã xóa khóa học khỏi giỏ hàng',
+            duration: 3000,
+      };
       return updatedCart;
     });
     setSelectedItems((prev) => prev.filter((id) => id !== itemId));
+    if (alertDetails) {
+          try {
+            addAlert(alertDetails.type, alertDetails.message, alertDetails.duration);
+          } catch (error) {
+            console.error('Error in addAlert:', error);
+          }
+      }
   };
+
+  const handleRemoveAll = () => {
+    let alertDetails = null; 
+    try {
+      setCart([]);
+      alertDetails = {
+        type: 'warning',
+        message: 'Đã xóa tất cả khóa học khỏi danh sách yêu thích',
+        duration: 3000,
+      };
+    } catch (error) {
+        alertDetails = {
+        type: 'error',
+        message: 'Đã xảy ra lỗi khi xóa khóa học!',
+        duration: 3000,
+      };
+    }
+      if (alertDetails) {
+        try {
+          addAlert(alertDetails.type, alertDetails.message, alertDetails.duration);
+        } catch (error) {
+          console.error('Error in addAlert:', error);
+        }
+      }
+  }
 
   // Placeholder for checkout action
   const handleCheckout = () => {
@@ -86,7 +123,7 @@ const CartModal = ({ cart, onClose, setCart, addAlert }) => {
                 <span className="text-gray-700 font-medium">Chọn tất cả ({cart.length})</span>
               </label>
               <button
-                onClick={() => setCart([])}
+                onClick={() => {handleRemoveAll()}}
                 className="text-red-500 hover:text-red-700 flex items-center gap-2"
               >
                 <Trash2 size={18} /> Xóa tất cả
@@ -111,7 +148,7 @@ const CartModal = ({ cart, onClose, setCart, addAlert }) => {
                   />
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-800">{item.name}</h3>
-                    <p className="text-gray-600">{(item.price * item.quantity).toLocaleString('vi-VN')}₫</p>
+                    <p className="text-gray-600">{(item.price).toLocaleString('vi-VN')}₫</p>
                   </div>
                   <button
                     onClick={() => handleRemoveFromCart(item.id)}
@@ -123,7 +160,7 @@ const CartModal = ({ cart, onClose, setCart, addAlert }) => {
                 </div>
               ))}
             </div>
-            <div className="mt-6 flex justify-between items-center border-t pt-4">
+            <div className="mt-6 flex justify-between items-center pt-4">
               <div className="text-lg font-semibold text-gray-800">
                 Tổng cộng ({selectedItems.length} sản phẩm):{' '}
                 <span className="text-red-500">{subtotal.toLocaleString('vi-VN')}₫</span>
