@@ -1,5 +1,5 @@
 # edu-ai-platform
-1. live demo: https://edu-ai-platform-1.vercel.app/
+1. live demo: https://edu-ai-platform-deploy.vercel.app/
 
 2. chạy ứng dụng này trên máy cục bộ:
 
