@@ -18,7 +18,7 @@ npm run dev
 <img width="1913" height="913" alt="image" src="https://github.com/user-attachments/assets/4f5fd944-e973-4a85-9fcb-e910d25e8f62" />
 
 ## Trang CARD
-<img width="1919" height="976" alt="image" src="https://github.com/user-attachments/assets/bdc18343-83d6-4131-b865-48532bb45a1e" />
+<img width="1919" height="911" alt="image" src="https://github.com/user-attachments/assets/932d5879-3259-4c29-b4c7-2fb0f7a082a1" />
 
 ## Gợi ý bằng AI giả
 <img width="1919" height="911" alt="image" src="https://github.com/user-attachments/assets/4432d864-5f5f-4019-9f6b-faac9b67a164" />
