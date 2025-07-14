@@ -1,7 +1,7 @@
-import { Heart, Trash2 } from 'lucide-react';
+import { Heart, Trash2, ShoppingCart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const ProductCard = ({ product, onDetailsClick, onWishlistToggle, isWishlisted, showDelete, onDelete }) => (
+const ProductCard = ({ product, onDetailsClick, onWishlistToggle, isWishlisted, showDelete, onDelete, onAddToCart, isInCart }) => (
     <motion.div
         layout
         initial={{ opacity: 0, scale: 0.8 }}
@@ -45,6 +45,14 @@ const ProductCard = ({ product, onDetailsClick, onWishlistToggle, isWishlisted, 
                     Xem chi tiết
                 </button>
             </div>
+            <button
+                onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+                disabled={isInCart}
+                className={`w-full mt-3 py-2 rounded-md text-sm font-semibold transition-colors duration-300 flex items-center justify-center gap-2 ${isInCart ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+            >
+                <ShoppingCart size={16} />
+                {isInCart ? 'Đã trong giỏ hàng' : 'Thêm vào giỏ'}
+            </button>
         </div>
     </motion.div>
 );

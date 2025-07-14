@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Heart, Search, X, Star, Bot, Clock, Loader, AlertCircle, Trash2, LogOut, UserPlus, User, ChevronDown, MessageSquare } from 'lucide-react'; // Add MessageSquare icon
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { Heart, Search, Bot, Clock, Loader, AlertCircle, Trash2, LogOut, User, ChevronDown, MessageSquare, ShoppingCart } from 'lucide-react'; // Add MessageSquare icon
 import { AnimatePresence, motion } from 'framer-motion';
 import mockProducts from  './data/mockData.js';
 import ProductCard from './components/ProductCard.jsx';
@@ -8,8 +9,9 @@ import SkeletonCard from './components/SkeletonCard.jsx'
 import AuthModal from './components/AuthModal.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
 import ChatbotModal from './components/ChatbotModal.jsx';
-import AlertButton from './components/AlertButton.jsx';
-import { div } from 'framer-motion/client';
+import AlertManager from './components/AlertManager.jsx';
+import Header from './components/Header.jsx';
+import CartModal from './components/CartModal.jsx';
 
 export default function App() {
     const [products] = useState(mockProducts);
@@ -19,6 +21,7 @@ export default function App() {
     const [wishlist, setWishlist] = useState([]);
     const [viewHistory, setViewHistory] = useState([]);
     const [activeTab, setActiveTab] = useState('all');
+    const [cart, setCart] = useState([]);
     const [suggestedProducts, setSuggestedProducts] = useState([]);
     const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [suggestionError, setSuggestionError] = useState(null);
@@ -27,7 +30,35 @@ export default function App() {
     const [showProfileModal, setShowProfileModal] = useState(false); // New state for profile modal
     const [showChatbotModal, setShowChatbotModal] = useState(false); // NEW: State for chatbot modal
     const dropdownRef = useRef(null); // Ref for dropdown to handle clicks outside
+    const [alerts, setAlerts] = useState([]);
 
+
+
+    const [showCartModal, setShowCartModal] = useState(false);
+
+    // New handler for opening cart modal
+    const handleOpenCart = () => {
+        setShowCartModal(true);
+    };
+
+    const handleCloseCart = () => {
+        setShowCartModal(false);
+    };
+
+    const addAlert = (type, message, duration = 5000) => {
+        const id = uuidv4();
+        setAlerts((prev) => [...prev, { id, type, message }]);
+        if (duration) {
+            setTimeout(() => {
+                removeAlert(id);
+            }, duration);
+        }
+    };
+
+    const removeAlert = (id) => {
+        setAlerts((prev) => prev.filter((alert) => alert.id !== id));
+    };
+    
     // Lấy dữ liệu người dùng từ localStorage khi component mount
     useEffect(() => {
         const loggedInUser = localStorage.getItem('currentUser');
@@ -36,17 +67,20 @@ export default function App() {
         }
     }, []);
 
-    // Load wishlist và view history của user khi đăng nhập
+    // Load wishlist, card và view history của user khi đăng nhập
     useEffect(() => {
         if (currentUser) {
             const savedWishlist = localStorage.getItem(`wishlist_${currentUser.email}`);
             const savedHistory = localStorage.getItem(`viewHistory_${currentUser.email}`);
+            const savedCart = localStorage.getItem(`cart_${currentUser.email}`);
             setWishlist(savedWishlist ? JSON.parse(savedWishlist) : []);
             setViewHistory(savedHistory ? JSON.parse(savedHistory) : []);
+            setCart(savedCart ? JSON.parse(savedCart) : []);
         } else {
             // Reset khi logout
             setWishlist([]);
             setViewHistory([]);
+            setCart([]);
         }
     }, [currentUser]);
 
@@ -76,6 +110,12 @@ export default function App() {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [dropdownRef]);
+
+    useEffect(() => {
+        if (currentUser) {
+            localStorage.setItem(`cart_${currentUser.email}`, JSON.stringify(cart));
+        }
+    }, [cart, currentUser]);
 
     // Lọc sản phẩm
     const filteredProducts = useMemo(() => {
@@ -114,16 +154,63 @@ export default function App() {
         setSelectedProduct(product);
         // Thêm vào đầu mảng lịch sử xem, không thêm trùng lặp
         setViewHistory(prev => [product.id, ...prev.filter(id => id !== product.id)]);
+
+        // Thông báo khi xem chi tiết khóa học
+        const alertDetails = {
+            type: 'info',
+            message: `Đã xem chi tiết khóa học: ${product.name}`,
+            duration: 3000,
+        };
+
+        // Gọi addAlert sau khi cập nhật state
+        try {
+            addAlert(alertDetails.type, alertDetails.message, alertDetails.duration);
+        } catch (error) {
+            console.error('Error in addAlert:', error);
+        }
+    };
+
+    // NEW: Hàm thêm sản phẩm vào giỏ hàng
+    const handleAddToCart = (productToAdd) => {
+        // Kiểm tra nếu sản phẩm chưa có trong giỏ hàng
+        if (!cart.find(item => item.id === productToAdd.id)) {
+            setCart(prevCart => [...prevCart, productToAdd]);
+            // (Tùy chọn) Hiển thị thông báo thành công
+            // alert(`${productToAdd.name} đã được thêm vào giỏ hàng!`);
+        }
     };
 
     const handleCloseModal = () => setSelectedProduct(null);
 
     const handleWishlistToggle = (productId) => {
-        setWishlist(prev =>
-            prev.includes(productId)
-                ? prev.filter(id => id !== productId)
-                : [...prev, productId]
-        );
+        let alertDetails = null; // Store alert details
+
+        setWishlist(prev => {
+            if (prev.includes(productId)) {
+            alertDetails = {
+                type: 'warning',
+                message: 'Đã xóa khóa học khỏi danh sách yêu thích',
+                duration: 3000,
+            };
+            return prev.filter(id => id !== productId);
+            } else {
+            alertDetails = {
+                type: 'success',
+                message: 'Đã thêm khóa học vào danh sách yêu thích',
+                duration: 3000,
+            };
+            return [...prev, productId];
+            }
+        });
+
+        // Call addAlert after state update
+        if (alertDetails) {
+            try {
+            addAlert(alertDetails.type, alertDetails.message, alertDetails.duration);
+            } catch (error) {
+            console.error('Error in addAlert:', error);
+            }
+        }
     };
 
     /**
@@ -131,26 +218,46 @@ export default function App() {
      * Nếu có productId, chỉ xóa sản phẩm đó.
      * Nếu không có, xóa toàn bộ lịch sử.
      */
-    const handleClearHistory = (productId = null) => {
-        let updatedHistory;
-        if (productId) {
-            // Xóa một sản phẩm cụ thể
-            updatedHistory = viewHistory.filter(id => id !== productId);
-        } else {
-            // Xóa toàn bộ
-            updatedHistory = [];
-        }
-        setViewHistory(updatedHistory);
+const handleClearHistory = (productId = null) => {
+    let updatedHistory;
+    let alertDetails;
 
-        // Cập nhật localStorage
-        if (currentUser) {
-            if (updatedHistory.length > 0) {
-                 localStorage.setItem(`viewHistory_${currentUser.email}`, JSON.stringify(updatedHistory));
-            } else {
-                 localStorage.removeItem(`viewHistory_${currentUser.email}`);
-            }
+    if (productId) {
+        // Xóa một sản phẩm cụ thể
+        updatedHistory = viewHistory.filter(id => id !== productId);
+        alertDetails = {
+            type: 'warning',
+            message: 'Đã xóa khóa học khỏi lịch sử xem',
+            duration: 3000,
+        };
+    } else {
+        // Xóa toàn bộ
+        updatedHistory = [];
+        alertDetails = {
+            type: 'warning',
+            message: 'Đã xóa toàn bộ lịch sử xem',
+            duration: 3000,
+        };
+    }
+
+    setViewHistory(updatedHistory);
+
+    // Cập nhật localStorage
+    if (currentUser) {
+        if (updatedHistory.length > 0) {
+            localStorage.setItem(`viewHistory_${currentUser.email}`, JSON.stringify(updatedHistory));
+        } else {
+            localStorage.removeItem(`viewHistory_${currentUser.email}`);
         }
-    };
+    }
+
+    // Gọi addAlert sau khi cập nhật state
+    try {
+        addAlert(alertDetails.type, alertDetails.message, alertDetails.duration);
+    } catch (error) {
+        console.error('Error in addAlert:', error);
+    }
+};
 
 
     // --- Xử lý Auth ---
@@ -205,13 +312,27 @@ export default function App() {
                 if (suggestions.length === 0 && products.length > 0) {
                     const randomSuggestions = [...products].sort(() => 0.5 - Math.random()).slice(0, 3);
                     setSuggestedProducts(randomSuggestions);
+                    try {
+                        addAlert('info', 'Không tìm thấy gợi ý phù hợp, hiển thị các khóa học ngẫu nhiên', 3000);
+                    } catch (error) {
+                        console.error('Error in addAlert:', error);
+                    }
                 } else {
                     setSuggestedProducts(suggestions);
+                    try {
+                        addAlert('success', 'Đã tải gợi ý khóa học thành công', 3000);
+                    } catch (error) {
+                        console.error('Error in addAlert:', error);
+                    }
                 }
-
             } catch (error) {
                 setSuggestionError("Có lỗi xảy ra khi lấy gợi ý.");
                 setSuggestedProducts([]);
+                try {
+                    addAlert('error', 'Có lỗi xảy ra khi lấy gợi ý khóa học', 3000);
+                } catch (error) {
+                    console.error('Error in addAlert:', error);
+                }
             } finally {
                 setIsLoadingSuggestions(false);
             }
@@ -298,6 +419,8 @@ export default function App() {
                             isWishlisted={wishlist.includes(product.id)}
                             showDelete={activeTab === 'history'} // Chỉ hiển thị nút xóa ở tab Lịch sử
                             onDelete={handleClearHistory} // Hàm xóa item
+                            onAddToCart={handleAddToCart} // Truyền hàm vào Card
+                            isInCart={!!cart.find(item => item.id === product.id)} // Kiểm tra sản phẩm có trong giỏ không
                         />
                     ))}
                 </div>
@@ -311,103 +434,11 @@ export default function App() {
 
     return (
         <div className="bg-gray-100 min-h-screen font-sans">
-            <header className="bg-white shadow-md sticky top-0 z-40">
-                <div className="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
-                    {/* Updated header layout for mobile */}
-                    <div className="flex justify-between items-center w-full md:w-auto mb-4 md:mb-0">
-                        <h1 className="text-2xl font-bold text-blue-600">EduAI Platform</h1>
-                        <div className="flex items-center gap-4 relative md:hidden" ref={dropdownRef}>
-                            <button
-                                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                                className="flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none"
-                                aria-expanded={showUserDropdown}
-                                aria-haspopup="true"
-                            >
-                                <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
-                                    {currentUser.email.charAt(0).toUpperCase()}
-                                </div>
-                                <ChevronDown size={16} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
-                            </button>
+           
+            <AlertManager alerts={alerts} removeAlert={removeAlert} />
 
-                            <AnimatePresence>
-                                {showUserDropdown && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
-                                    >
-                                        <button
-                                            onClick={handleProfileClick}
-                                            className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                        >
-                                            <User size={18} /> Hồ sơ
-                                        </button>
-                                        <button
-                                            onClick={handleLogout}
-                                            className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center gap-2 border-t border-gray-100"
-                                        >
-                                            <LogOut size={18} /> Đăng xuất
-                                        </button>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </div>
-
-                    <div className="relative w-full md:w-1/3 mb-4 md:mb-0">
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm khóa học..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                    </div>
-                    <div className="hidden md:flex items-center gap-4 relative" ref={dropdownRef}>
-                        <button
-                            onClick={() => setShowUserDropdown(!showUserDropdown)}
-                            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 focus:outline-none"
-                            aria-expanded={showUserDropdown}
-                            aria-haspopup="true"
-                        >
-                            <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
-                                {currentUser.email.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="hidden md:block">{currentUser.email}</span>
-                            <ChevronDown size={16} className={`transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        <AnimatePresence>
-                            {showUserDropdown && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
-                                >
-                                    <button
-                                        onClick={handleProfileClick}
-                                        className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                    >
-                                        <User size={18} /> Hồ sơ
-                                    </button>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 flex items-center gap-2 border-t border-gray-100"
-                                    >
-                                        <LogOut size={18} /> Đăng xuất
-                                    </button>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-            </header>
-
+            <Header cart={cart} handleLogout={handleLogout} handleProfileClick={handleProfileClick} currentUsers={currentUser} dropdownRef={dropdownRef} onOpenCart={handleOpenCart} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+            
             <main className="container mx-auto px-4 py-8">
                 <div className="flex flex-col md:flex-row gap-8">
                     {/* Sidebar */}
@@ -495,7 +526,9 @@ export default function App() {
                     </div>
                 </div>
             </main>
-
+            {showCartModal && (
+            <CartModal cart={cart} onClose={handleCloseCart} setCart={setCart} addAlert={addAlert} />
+            )}
             {selectedProduct && <ProductModal product={selectedProduct} onClose={handleCloseModal} />}
             {showProfileModal && currentUser && <ProfileModal user={currentUser} onClose={handleCloseProfileModal} />}
             {showChatbotModal && (
